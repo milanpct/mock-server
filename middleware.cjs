@@ -24,17 +24,23 @@ const writeDb = data => {
 };
 
 module.exports = (req, res, next) => {
-  // Add CORS headers
+  // Add comprehensive CORS headers
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400'); // 24 hours
   res.header(
     'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Cap-Nonce, X-Cap-Challenge-ID, X-Cap-Signature, X-Cap-Device-ID'
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, X-Cap-Nonce, X-Cap-Challenge-ID, X-Cap-Signature, X-Cap-Device-ID'
+  );
+  res.header(
+    'Access-Control-Expose-Headers',
+    'Content-Length, Content-Type, Date, Server, X-RateLimit-Limit, X-RateLimit-Remaining'
   );
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
+    res.status(200).end();
     return;
   }
 
