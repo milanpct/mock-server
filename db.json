@@ -1,0 +1,24 @@
+{
+  "nonce": {
+    "nonce": "mock-nonce-abc123def456",
+    "challenge_id": "challenge-xyz789uvw012",
+    "expires_at": 1735689600000
+  },
+  "events": {
+    "status": {
+      "success": true,
+      "code": "200",
+      "message": "Events processed successfully"
+    },
+    "events": [
+      {
+        "event_id": "evt_001",
+        "status": {
+          "success": true,
+          "code": "200",
+          "message": "Event processed successfully"
+        }
+      }
+    ]
+  }
+}

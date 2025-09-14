@@ -1,0 +1,22 @@
+{
+  "name": "hydra-websdk-mock-server",
+  "version": "1.0.0",
+  "description": "Mock server for Hydra WebSDK testing and development",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "dev": "node server.cjs",
+    "mock-server": "node server.cjs",
+    "demo": "npm run mock-server"
+  },
+  "keywords": ["mock-server", "websdk", "hydra", "testing"],
+  "author": "Milan Prajapati",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "json-server": "^0.17.4"
+  }
+}
