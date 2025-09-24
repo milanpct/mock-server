@@ -62,7 +62,7 @@ module.exports = (req, res, next) => {
     const response = {
       nonce: `nonce-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       challenge_id: `challenge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      expires_at: Date.now() + 300000, // 5 minutes from now
+      expires_at: Date.now() + 900000, // 15 minutes from now
     };
 
     console.log(`✅ Nonce Response:`, response);
@@ -113,18 +113,18 @@ module.exports = (req, res, next) => {
 
         console.log(`   Event ${event.name}: Attempt #${newAttempts}`);
 
-        if (newAttempts <= 2) {
-          // Fail first 2 attempts (simulate network issues)
+        if (newAttempts <= 1 && event.attributes && event.attributes.test_retry) {
+          // Fail first 1 attempts (simulate network issues)
           eventResponses.push({
             event_id: eventId,
             status: {
               success: false,
               code: 500,
-              message: `Simulated failure - attempt ${newAttempts}/3`,
+              message: `Simulated failure - attempt ${newAttempts}/2`,
             },
           });
         } else {
-          // Succeed on 3rd attempt
+          // Succeed on 2nd attempt
           eventResponses.push({
             event_id: eventId,
             status: {
