@@ -304,9 +304,9 @@ module.exports = (req, res, next) => {
     console.log(`✅ Events Response (${eventCount} events):`, JSON.stringify(response, null, 2));
 
     // Add a small delay to simulate network latency
-    setTimeout(() => {
+    // setTimeout(() => {
       res.json(response);
-    }, 5000);
+    // }, 5000);
     return;
   }
 
