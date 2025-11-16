@@ -4,42 +4,45 @@
  * Handles custom authentication and response logic for WebSDK demo
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // Track retry attempts for events (in memory for demo)
 const retryAttempts = new Map();
 
 // Helper function to read database
 const readDb = () => {
-  const dbPath = path.join(__dirname, 'db.json');
-  const data = fs.readFileSync(dbPath, 'utf8');
+  const dbPath = path.join(__dirname, "db.json");
+  const data = fs.readFileSync(dbPath, "utf8");
   return JSON.parse(data);
 };
 
 // Helper function to write database
-const writeDb = data => {
-  const dbPath = path.join(__dirname, 'db.json');
+const writeDb = (data) => {
+  const dbPath = path.join(__dirname, "db.json");
   fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
 };
 
 module.exports = (req, res, next) => {
   // Add comprehensive CORS headers
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+  res.header("Access-Control-Allow-Origin", "*");
   res.header(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, X-Cap-Nonce, X-Cap-Challenge-ID, X-Cap-Signature, X-Cap-Device-ID'
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Max-Age", "86400"); // 24 hours
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, X-Cap-Nonce, X-Cap-Challenge-ID, X-Cap-Signature, X-CAP-API-AUTH-ORG-ID, X-CAP-VAP-ID"
   );
   res.header(
-    'Access-Control-Expose-Headers',
-    'Content-Length, Content-Type, Date, Server, X-RateLimit-Limit, X-RateLimit-Remaining'
+    "Access-Control-Expose-Headers",
+    "Content-Length, Content-Type, Date, Server, X-RateLimit-Limit, X-RateLimit-Remaining"
   );
 
   // Handle preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
   }
@@ -48,20 +51,23 @@ module.exports = (req, res, next) => {
   console.log(`   Method: ${req.method}`);
   console.log(`   URL: ${req.url}`);
   console.log(`   Headers:`, {
-    'X-Cap-Nonce': req.headers['x-cap-nonce'],
-    'X-Cap-Challenge-ID': req.headers['x-cap-challenge-id'],
-    'X-Cap-Signature': req.headers['x-cap-signature'],
-    'X-Cap-Device-ID': req.headers['x-cap-device-id'],
+    "X-Cap-Nonce": req.headers["x-cap-nonce"],
+    "X-Cap-Challenge-ID": req.headers["x-cap-challenge-id"],
+    "X-Cap-Signature": req.headers["x-cap-signature"],
+    "X-CAP-API-AUTH-ORG-ID": req.headers["x-cap-api-auth-org-id"],
+    "X-CAP-VAP-ID": req.headers["x-cap-vap-id"],
   });
   if (req.body && Object.keys(req.body).length > 0) {
     console.log(`   Body:`, JSON.stringify(req.body, null, 2));
   }
 
   // Handle nonce requests
-  if (req.method === 'POST' && req.url === '/auth/nonce') {
+  if (req.method === "POST" && req.url === "/auth/nonce") {
     const response = {
       nonce: `nonce-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      challenge_id: `challenge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      challenge_id: `challenge-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`,
       expires_at: Date.now() + 900000, // 15 minutes from now
     };
 
@@ -70,11 +76,53 @@ module.exports = (req, res, next) => {
     return;
   }
 
+  // Handle visitor config requests
+  if (req.method === "GET" && req.url === "/v2/visitors/config") {
+    // Validate required headers
+    const requiredHeaders = ["x-cap-api-auth-org-id", "x-cap-vap-id"];
+    const missingHeaders = requiredHeaders.filter(
+      (header) => !req.headers[header]
+    );
+
+    if (missingHeaders.length > 0) {
+      console.log(`❌ Missing headers:`, missingHeaders);
+      res.status(401).json({
+        error: "Unauthorized",
+        message: `Missing required headers: ${missingHeaders.join(", ")}`,
+        code: 401,
+      });
+      return;
+    }
+
+    // Extract header values for logging
+    const orgId = req.headers["x-cap-api-auth-org-id"];
+    const vapId = req.headers["x-cap-vap-id"];
+
+    console.log(`   Org ID: ${orgId}`);
+    console.log(`   VAP ID: ${vapId}`);
+
+    // Mock response for visitor config
+    const response = {
+      isVisitorTrackingEnabled: true,
+      warnings: [],
+    };
+
+    console.log(`✅ Visitor Config Response:`, response);
+    res.json(response);
+    return;
+  }
+
   // Handle events requests
-  if (req.method === 'POST' && req.url === '/mapp/events') {
+  if (req.method === "POST" && req.url === "/mapp/events") {
     // Validate headers
-    const requiredHeaders = ['x-cap-nonce', 'x-cap-challenge-id', 'x-cap-signature', 'x-cap-device-id'];
-    const missingHeaders = requiredHeaders.filter(header => !req.headers[header]);
+    const requiredHeaders = [
+      "x-cap-nonce",
+      "x-cap-challenge-id",
+      "x-cap-signature",
+    ];
+    const missingHeaders = requiredHeaders.filter(
+      (header) => !req.headers[header]
+    );
 
     if (missingHeaders.length > 0) {
       console.log(`❌ Missing headers:`, missingHeaders);
@@ -82,7 +130,9 @@ module.exports = (req, res, next) => {
         status: {
           success: false,
           code: 401,
-          message: `Missing authentication headers: ${missingHeaders.join(', ')}`,
+          message: `Missing authentication headers: ${missingHeaders.join(
+            ", "
+          )}`,
         },
       });
       return;
@@ -93,19 +143,23 @@ module.exports = (req, res, next) => {
     const eventCount = events.length;
 
     // Check if this is a retry test scenario
-    const isRetryTest = events.some(event => event.attributes && event.attributes.test_retry);
+    const isRetryTest = events.some(
+      (event) => event.attributes && event.attributes.test_retry
+    );
 
     let response;
     let successfulEvents = []; // Track which events to store
 
     if (isRetryTest) {
       // Handle retry test scenario with progressive success
-      console.log(`🔄 RETRY TEST DETECTED - Processing ${eventCount} retry events`);
+      console.log(
+        `🔄 RETRY TEST DETECTED - Processing ${eventCount} retry events`
+      );
 
       successfulEvents = [];
       const eventResponses = [];
 
-      events.forEach(event => {
+      events.forEach((event) => {
         const eventId = event.event_id;
         const currentAttempts = retryAttempts.get(eventId) || 0;
         const newAttempts = currentAttempts + 1;
@@ -113,7 +167,11 @@ module.exports = (req, res, next) => {
 
         console.log(`   Event ${event.name}: Attempt #${newAttempts}`);
 
-        if (newAttempts <= 1 && event.attributes && event.attributes.test_retry) {
+        if (
+          newAttempts <= 1 &&
+          event.attributes &&
+          event.attributes.test_retry
+        ) {
           // Fail first 1 attempts (simulate network issues)
           eventResponses.push({
             event_id: eventId,
@@ -143,8 +201,8 @@ module.exports = (req, res, next) => {
           code: successfulEvents.length === eventCount ? 200 : 201,
           message:
             successfulEvents.length === eventCount
-              ? 'All retry events eventually succeeded'
-              : 'Partial success - some events still failing',
+              ? "All retry events eventually succeeded"
+              : "Partial success - some events still failing",
         },
         events: eventResponses,
       };
@@ -156,7 +214,7 @@ module.exports = (req, res, next) => {
           status: {
             success: true,
             code: 200,
-            message: 'No events to process',
+            message: "No events to process",
           },
           events: [],
         };
@@ -169,14 +227,14 @@ module.exports = (req, res, next) => {
           status: {
             success: true,
             code: 200,
-            message: 'All events processed successfully',
+            message: "All events processed successfully",
           },
-          events: events.map(event => ({
+          events: events.map((event) => ({
             event_id: event.event_id,
             status: {
               success: true,
               code: 200,
-              message: 'Event processed successfully',
+              message: "Event processed successfully",
             },
           })),
         };
@@ -188,7 +246,7 @@ module.exports = (req, res, next) => {
           status: {
             success: false,
             code: 201,
-            message: 'Partial success - some events failed',
+            message: "Partial success - some events failed",
           },
           events: events.map((event, index) => ({
             event_id: event.event_id,
@@ -197,12 +255,12 @@ module.exports = (req, res, next) => {
                 ? {
                     success: true,
                     code: 200,
-                    message: 'Event processed successfully',
+                    message: "Event processed successfully",
                   }
                 : {
                     success: false,
                     code: 429,
-                    message: 'Rate limit exceeded - retry later',
+                    message: "Rate limit exceeded - retry later",
                   },
           })),
         };
@@ -214,14 +272,14 @@ module.exports = (req, res, next) => {
           status: {
             success: true,
             code: 200,
-            message: 'Large batch processed successfully',
+            message: "Large batch processed successfully",
           },
-          events: events.map(event => ({
+          events: events.map((event) => ({
             event_id: event.event_id,
             status: {
               success: true,
               code: 200,
-              message: 'Event processed successfully',
+              message: "Event processed successfully",
             },
           })),
         };
@@ -233,7 +291,7 @@ module.exports = (req, res, next) => {
           status: {
             success: false,
             code: 500,
-            message: 'Batch size too large - please retry with smaller batches',
+            message: "Batch size too large - please retry with smaller batches",
           },
         };
       }
@@ -250,7 +308,7 @@ module.exports = (req, res, next) => {
         }
 
         // Add timestamp and request metadata to successful events
-        const eventsToStore = successfulEvents.map(event => ({
+        const eventsToStore = successfulEvents.map((event) => ({
           ...event,
           stored_at: new Date().toISOString(),
           request_id: req.body.request_id,
@@ -268,44 +326,53 @@ module.exports = (req, res, next) => {
           `💾 Stored ${successfulEvents.length} successful events in database (out of ${eventCount} total)`
         );
       } catch (error) {
-        console.error('❌ Error storing events:', error);
+        console.error("❌ Error storing events:", error);
       }
     } else if (eventCount > 0) {
-      console.log(`⚠️ No events stored - all ${eventCount} events failed processing`);
+      console.log(
+        `⚠️ No events stored - all ${eventCount} events failed processing`
+      );
     }
 
     // Add special handling for test events
     const hasTestEvents = events.some(
-      event =>
+      (event) =>
         event.name &&
-        (event.name.includes('success_test') ||
-          event.name.includes('partial_test') ||
-          event.name.includes('batch_queue') ||
-          event.name.includes('large_batch') ||
-          event.name.includes('retry_test') ||
-          event.name.includes('rapid_fire'))
+        (event.name.includes("success_test") ||
+          event.name.includes("partial_test") ||
+          event.name.includes("batch_queue") ||
+          event.name.includes("large_batch") ||
+          event.name.includes("retry_test") ||
+          event.name.includes("rapid_fire"))
     );
 
     if (hasTestEvents) {
       console.log(`🧪 TEST EVENTS DETECTED (${eventCount} events):`);
       events.forEach((event, index) => {
-        let testType = 'OTHER';
-        if (event.attributes?.test_success) testType = 'ALL_SUCCESS_TEST';
-        else if (event.attributes?.test_partial) testType = 'PARTIAL_SUCCESS_TEST';
-        else if (event.attributes?.test_batch_queue) testType = 'BATCH_QUEUE_TEST';
-        else if (event.attributes?.test_large_batch) testType = 'LARGE_BATCH_TEST';
-        else if (event.attributes?.test_retry) testType = 'RETRY_TEST';
-        else if (event.attributes?.test_rapid_fire) testType = 'RAPID_FIRE_TEST';
+        let testType = "OTHER";
+        if (event.attributes?.test_success) testType = "ALL_SUCCESS_TEST";
+        else if (event.attributes?.test_partial)
+          testType = "PARTIAL_SUCCESS_TEST";
+        else if (event.attributes?.test_batch_queue)
+          testType = "BATCH_QUEUE_TEST";
+        else if (event.attributes?.test_large_batch)
+          testType = "LARGE_BATCH_TEST";
+        else if (event.attributes?.test_retry) testType = "RETRY_TEST";
+        else if (event.attributes?.test_rapid_fire)
+          testType = "RAPID_FIRE_TEST";
 
         console.log(`   ${index + 1}. ${event.name} - ${testType}`);
       });
     }
 
-    console.log(`✅ Events Response (${eventCount} events):`, JSON.stringify(response, null, 2));
+    console.log(
+      `✅ Events Response (${eventCount} events):`,
+      JSON.stringify(response, null, 2)
+    );
 
     // Add a small delay to simulate network latency
     // setTimeout(() => {
-      res.json(response);
+    res.json(response);
     // }, 5000);
     return;
   }
