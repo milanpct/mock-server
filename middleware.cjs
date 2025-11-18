@@ -79,7 +79,8 @@ module.exports = (req, res, next) => {
   // Handle visitor config requests
   if (req.method === "GET" && req.url === "/v2/visitors/config") {
     // Validate required headers
-    const requiredHeaders = ["x-cap-api-auth-org-id", "x-cap-vap-id"];
+    // const requiredHeaders = ["x-cap-api-auth-org-id", "x-cap-vap-id"];
+    const requiredHeaders = ["x-cap-api-auth-org-id"];
     const missingHeaders = requiredHeaders.filter(
       (header) => !req.headers[header]
     );
